@@ -1,0 +1,203 @@
+<!DOCTYPE HTML>
+<html lang="pt-br">
+	<head>
+		<meta charset="UTF-8">
+
+		<title>Instagram Clone - WEB</title>
+		
+		<!-- JQuery -->
+		<script src="http://code.jquery.com/jquery-3.1.1.min.js"></script>
+
+		<!-- bootstrap - link cdn -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+	
+		<!-- incluindo css -->
+		<link href="css/style.css" rel="stylesheet">
+
+		<script>
+			$(document).ready(function(){
+				function carrega_postagens(){
+					var xhr = new XMLHttpRequest();
+
+					xhr.open('GET','http://localhost:8080/api');
+					
+					xhr.onload = function(){
+						if(xhr.status === 200){
+							var data = jQuery.parseJSON(xhr.responseText);
+							for(i = 0; i < data.length; i++){
+
+								
+
+								$('#container_timeline').append(
+									'<div class="publicacao">'+
+										'<span class="titulo">'+data[i].titulo+'</span>'+
+										'<img src="http://localhost:8080/uploads/'+data[i].url_imagem+'" alt="'+data[i].titulo+'" title="'+data[i].titulo+'" class="img-responsive">'+
+										'<div class="comentarios" id="comentarios_'+data[i]._id+'"></div>'+
+										'<div class="comentar">'+
+											'<input type="text" class="form-control input_comentario" id="postagem_'+data[i]._id+'" placeholder="Adicione um comentário">'+
+											'<button class="btn btn-default btn_postagem" value="'+data[i]._id+'" type="button">Comentar</button>'
+										+'</div>'
+									+'</div>'
+							
+								);
+
+								if(data[i].comentarios != undefined && data[i].comentarios.length > 0)
+								{
+									for(x = 0; x < data[i].comentarios.length; x++){
+										$('#comentarios_'+data[i]._id).append(
+											'<div class="txt_comentario">'+
+												'<button type="button" value="'+data[i].comentarios[x].id_comentario+'" class="btn btn-default btn_remover_postagem">X</button>'+
+												data[i].comentarios[x].comentario
+											+'</div>'
+										);
+									}
+								}
+							}
+							$('.btn_remover_postagem').on('click',function(){
+								var id = $(this).val();
+								var xhr = new XMLHttpRequest();
+
+								// verificar as mudanças de estado
+								xhr.onreadystatechange = function(){
+									if(xhr.readyState == 4){
+										var resposta = xhr.responseText;
+										document.getElementById('mensagem').innerHTML = resposta;
+									}
+								}
+								xhr.open("DELETE", "http://localhost:8080/api/"+id);
+								xhr.onload = function(){
+									window.location.href = '/home';
+								};
+								xhr.send();
+								
+							});
+							$('.btn_postagem').on('click',function(){
+								var id = $(this).val();
+								var texto = $('#postagem_'+$(this).val()).val();
+								var user_fake = Math.floor(Math.random() * 10000) + 1;
+								var formData = new FormData();
+
+								
+
+								formData.append("id", id);
+								formData.append("comentario", texto);
+								formData.append("user", user_fake);
+								// criar xmlhttprequest
+								var xhr = new XMLHttpRequest();
+
+								// verificar as mudanças de estado
+								xhr.onreadystatechange = function(){
+									if(xhr.readyState == 4){
+										var resposta = xhr.responseText;
+										document.getElementById('mensagem').innerHTML = resposta;
+									}
+								}
+
+								// fazer envio do nosso request
+								xhr.open("PUT", "http://localhost:8080/api/"+id);
+								xhr.setRequestHeader('Content-Type','application/json');
+								xhr.onload = function(){
+									$('#postagem_'+id).val('');
+									$('#comentarios_'+id).append(
+											'<div class="txt_comentario">'+
+												texto
+											+'</div>'
+										);
+								}
+								
+								xhr.send(JSON.stringify({id:id,comentario:texto,user:user_fake}));
+							});
+						}
+					}
+
+					xhr.send();
+				};
+				carrega_postagens();
+				
+				$('#btn_incluir').click(function(){
+					$('#container_timeline').hide();
+					$('#container_form').show();
+				});
+
+				$('#btn-cancelar-publicacao').click(function(){
+					$('#container_timeline').show();
+					$('#container_form').hide();
+					return false;
+				});
+
+				$('#btn-publicar').click(function(){
+
+					// criar um formData
+					var formData = new FormData();
+
+					var arquivo = document.getElementById('arquivo').files[0];
+					var titulo = document.getElementById('titulo').value;
+
+					formData.append("arquivo", arquivo);
+					formData.append("titulo", titulo);
+
+					// criar xmlhttprequest
+					var xhr = new XMLHttpRequest();
+
+					// verificar as mudanças de estado
+					xhr.onreadystatechange = function(){
+						if(xhr.readyState == 4){
+							var resposta = xhr.responseText;
+							document.getElementById('mensagem').innerHTML = resposta;
+						}
+					}
+
+					// fazer envio do nosso request
+					xhr.open("POST", "http://localhost:8080/api");
+					xhr.send(formData);
+
+				});
+
+			});
+		</script>
+
+	</head>
+
+	<body>
+
+		<nav class="navbar navbar-default">
+			<div class="container">
+				<div class="col-md-12">
+					<div class="container-fluid">
+						<img alt="Instagram Clone - Versão WEB" src="images/logo2.jpg" class="logo2">
+						<img alt="Incluir" src="images/incluir.jpg" class="pull-right btn-incluir" id="btn_incluir">						
+					</div>
+				</div>
+			</div>
+		</nav>
+
+		<div class="container">
+			<div class="col-md-2"></div>
+			<div class="col-md-8" id="container_timeline"></div>
+			
+		</div>
+
+
+		<div class="container" style="display:none" id="container_form">
+			<div class="panel panel-default">
+
+			<div class="panel-heading"><h4>Publicar uma foto</h4></div>
+			
+			<div class="panel-body">
+				<div class="form-group">
+					<input type="file" name="arquivo" id="arquivo" class="form-control">
+				</div>
+
+				<div class="form-group">
+					<input type="text" name="titulo" id="titulo" class="form-control" placeholder="Titulo" autocomplete="off">
+				</div>
+
+				<div class="form-group">
+					<button class="btn btn-success" id="btn-publicar">Publicar</button>
+					<button class="btn btn-danger" id="btn-cancelar-publicacao">Cancelar</button>
+				</div>
+				<div id="mensagem"></div>
+			</div>
+		</div>
+	</body>
+</html>
